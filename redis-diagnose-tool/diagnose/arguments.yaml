@@ -1,0 +1,32 @@
+# Configuration file for Redis Diagnose Tool
+
+# The configuration file only work if the path of the configuration file is specified by `--config/-c path`
+# If the configuration file is specified, the cmd args won't work
+# Follow instructions from `--help` to specify the configuration file
+
+# Tool options
+advanced: false # Enable advanced mode, default false
+detect_server: false # Enable detecting server, default false
+language: "zh" # "zh" for Chinese and "en" for English, default "zh"
+
+# Redis instance connection info
+host: ""  # Connection hostname, empty for null
+port: 6379  # Connection port, default 6379
+timeout: 2 # Connection timeout, second, default 2 s
+user: ""  # Username, empty for null
+password: ""  # Password, empty for null
+
+# Redis instance information
+redis: ""  # Redis instance id, empty for null
+redis_region_id: ""  # Redis instance region id, empty for null
+redis_endpoint: ""  # Redis instance endpoint, empty for null
+
+# ECS instance information
+ecs: ""  # ECS instance id, empty for null
+ecs_region_id: ""  # ECS instance region id, empty for null
+ecs_endpoint: ""  # ECS instance endpoint, empty for null
+
+# SDK information
+ak: ""  # Access key id, empty for null
+sk: ""  # Access key secret, empty for null
+

@@ -1,0 +1,11 @@
+PyYAML==6.0.1
+redis==4.3.0
+psutil==6.0.0
+distro==1.9.0
+requests==2.27.1
+pyroute2==0.7.10
+python-dateutil==2.9.0
+colorlog==6.8.2
+alibabacloud-r-kvstore20150101==4.2.0
+alibabacloud-ecs20140526==4.1.8
+tqdm==4.63.0
