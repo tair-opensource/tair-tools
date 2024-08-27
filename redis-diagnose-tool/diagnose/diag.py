@@ -26,7 +26,6 @@ from diagnose.exceptions import (
 )
 from diagnose.notification_template import (
     InitializationNotification,
-    SystemNotification,
     ArgumentsNotification,
     TCPConnectionNotification,
     DNSResolutionNotification,
@@ -36,17 +35,10 @@ from diagnose.notification_template import (
     ServerDetectionNotification,
 )
 
-SUPPORTED_SYSTEMS = ["Linux", "MacOS"]
-
 
 def start_diagnose():
     # Output banner
     logger.info(diagnose.diagnostic_report.BANNER)
-    # Check system
-    system_type, system_detail = utils.get_system_info()
-    if system_type not in SUPPORTED_SYSTEMS:
-        logger.error(SystemNotification.system_type_error().format(system_type, SUPPORTED_SYSTEMS))
-        return
 
     # Get and validate args
     try:

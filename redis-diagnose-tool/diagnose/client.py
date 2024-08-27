@@ -181,6 +181,9 @@ class Client:
         dns_resolution_check.fail()
 
         # Check nameserver configuration
+        if self._system_type not in ["Linux", "MacOS"]:
+            ConnectionDiagnosticReport.add_warning(DNSResolutionNotification.no_exception_warning())
+            return
         logger.info(ProcessReport.gen_process_rectangle(DNSResolutionNotification.check_nameserver_log()))
         nameservers = utils.read_resolve_config()
         nameservers = list(filter(lambda ip: utils.get_ip_address_type(ip) == "IPv4", nameservers))

@@ -81,15 +81,6 @@ class InitializationNotification(NotificationTemplate):
         return "Initialization failed in advanced mode"
 
 
-# system type notification
-class SystemNotification(NotificationTemplate):
-    @classmethod
-    def system_type_error(cls) -> str:
-        if cls.language == "zh":
-            return "系统不支持，你的系统: {}, 支持的系统: {}"
-        return "System not supported, your system: {}, supported system: {}"
-
-
 # get arguments and validation
 class ArgumentsNotification(NotificationTemplate):
     @classmethod
