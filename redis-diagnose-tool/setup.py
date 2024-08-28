@@ -3,7 +3,8 @@ from setuptools import setup, find_packages
 setup(
     name="redis-diagnose-tool",
     version="0.0.1",
-    description="This is a tool for diagnosing Redis/Tair client connection errors.",
+    description="redis-diagnose-tool is a tool for diagnosing Redis/Tair client connection errors and supports "
+                "detecting the response rtt of the DB Server in the Redis/Tair instance.",
     long_description=open("README.md").read().strip(),
     long_description_content_type="text/markdown",
     packages=find_packages(

@@ -1,4 +1,5 @@
 # redis-diagnose-tool
+[![PyPI - Version](https://img.shields.io/pypi/v/redis-diagnose-tool)](https://pypi.org/project/redis-diagnose-tool/)
 [![MIT licensed](https://img.shields.io/badge/license-MIT-blue.svg)](./LICENSE)
 
 [English](README.md) | 简体中文
@@ -107,23 +108,20 @@ cd /opt/redis-diagnose-tool-{version}
 基础模式下运行
 
 ```bash
-cd /opt/redis-diagnose-tool-{version}
-./diag -h "connection_address" -p 6379 -u "user" -a "password"
+diag -h "connection_address" -p 6379 -u "user" -a "password"
 ```
 
 高级模式下运行
 
 ```bash
-cd /opt/redis-diagnose-tool-{version}
-./diag -h "connection_address" -p 6379 -u "user" -a "password" -k "ak" -s "sk" -r "redis_instance_id" -g "redis_region_id" -A
+diag -h "connection_address" -p 6379 -u "user" -a "password" -k "ak" -s "sk" -r "redis_instance_id" -g "redis_region_id" -A
 ```
 
 使用参数模版`arguments.yaml`
 
 高级模式下需要在命令行中设置多种可选参数，繁琐且容易出错，所以提供一个参数模版
 ```bash
-cd /opt/redis-diagnose-tool-{version}
-./diag --config "arguments.yaml"
+diag --config "arguments.yaml"
 ```
 
 若使用了参数模版，命令行参数就无效

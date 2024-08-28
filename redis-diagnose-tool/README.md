@@ -1,4 +1,5 @@
 # redis-diagnose-tool
+[![PyPI - Version](https://img.shields.io/pypi/v/redis-diagnose-tool)](https://pypi.org/project/redis-diagnose-tool/)
 [![MIT licensed](https://img.shields.io/badge/license-MIT-blue.svg)](./LICENSE)
 
 English | [简体中文](README.zh_CN.md)
@@ -109,15 +110,13 @@ cd /opt/redis-diagnose-tool-{version}
 run in basic mode
 
 ```bash
-cd /opt/redis-diagnose-tool-{version}
-./diag -h "connection_address" -p 6379 -u "user" -a "password"
+diag -h "connection_address" -p 6379 -u "user" -a "password"
 ```
 
 run in advanced mode
 
 ```bash
-cd /opt/redis-diagnose-tool-{version}
-./diag -h "connection_address" -p 6379 -u "user" -a "password" -k "ak" -s "sk" -r "redis_instance_id" -g "redis_region_id" -A
+diag -h "connection_address" -p 6379 -u "user" -a "password" -k "ak" -s "sk" -r "redis_instance_id" -g "redis_region_id" -A
 ```
 
 Use argument template `arguments.yaml`
@@ -125,8 +124,7 @@ Use argument template `arguments.yaml`
 In advanced mode, you need to set multiple optional arguments in the command line, which is cumbersome and error-prone, so an argument template is provided
 
 ```bash
-cd /opt/redis-diagnose-tool-{version}
-./diag --config "arguments.yaml"
+diag --config "arguments.yaml"
 ```
 
 If the argument template is used, the command line arguments will be invalid.
