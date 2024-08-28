@@ -2,10 +2,10 @@ from setuptools import setup, find_packages
 
 setup(
     name="redis-diagnose-tool",
-    version="0.0.1",
-    description="redis-diagnose-tool is a tool for diagnosing Redis/Tair client connection errors and supports "
-                "detecting the response rtt of the DB Server in the Redis/Tair instance.",
-    long_description=open("README.md").read().strip(),
+    version="0.1.0",
+    url="https://github.com/tair-opensource/tair-tools/tree/main/redis-diagnose-tool",
+    description="redis-diagnose-tool is a tool for diagnosing Redis/Tair client connection errors.",
+    long_description=open("pypi_desp.md").read().strip(),
     long_description_content_type="text/markdown",
     packages=find_packages(
         include=[

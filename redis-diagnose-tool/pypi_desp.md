@@ -3,8 +3,6 @@
 [![PyPI - Version](https://img.shields.io/pypi/v/redis-diagnose-tool)](https://pypi.org/project/redis-diagnose-tool/)
 [![MIT licensed](https://img.shields.io/badge/license-MIT-blue.svg)](./LICENSE)
 
-English | [简体中文](README.zh_CN.md)
-
 `redis-diagnose-tool` is a tool for diagnosing `Redis/Tair` client connection errors and supports detecting the response rtt of the DB Server in the `Redis/Tair` instance.
 
 **This diagnostic tool is only applicable to clients connecting to Alibaba Cloud's Redis and Tair instances**
@@ -15,7 +13,7 @@ English | [简体中文](README.zh_CN.md)
 2. Execute the `AUTH` command to verify the username and password. If no password is specified, execute the `PING` command to verify whether the password-free function is enabled
 3. Use the `INFO` command and Alibaba Cloud [proxy](https://help.aliyun.com/zh/tair/developer-reference/in-house-commands-for-tair-instances-in-proxy-mode?spm=a2c4g.11174283.0.0.6484137doOGYo5) self-developed `IINFO` command and `RIINFO` command to detect the response rtt of the DB Server
 
-<img src="./assets/diagnostic_process_en.png" width="35%" height="35%" />
+<img src="https://github.com/tair-opensource/tair-tools/blob/main/redis-diagnose-tool/assets/diagnostic_process_en.png" width="35%" height="35%" />
 
 ****
 
@@ -37,13 +35,7 @@ the executable program `diag` will be installed in the bin directory of the Pyth
 
 Use `pip show redis-diagnose-tool` to find the installation path of the redis-diagnose-tool package. The argument template `arguments.yaml` is stored in the diagnose directory under the installation path.
 
-**Install from yum, requires Alibaba mirror source**
 
-```bash
-sudo yum install redis-diagnose-tool -b current
-```
-
-There will be an executable program `arguments.yaml ` and an argument template `arguments.yaml`  in the path `/opt/redis-diagnose-tool-{version}` .
 
 ## Usage
 
@@ -100,12 +92,9 @@ SDK information:
 **Usage Examples:**
 
 ```bash
-# 1. Installed from pip, you can run diag directly when the bin directory is added to the environment path
-diag --help
+# Installed from pip, you can run diag directly when the bin directory is added to the environment path
 
-# 2. Installed from yum
-cd /opt/redis-diagnose-tool-{version}
-./diag --help
+diag --help
 ```
 
 run in basic mode
@@ -139,4 +128,4 @@ If the argument template is used, the command line arguments will be invalid.
 
 ## License
 
-[MIT](LICENSE)
+[MIT](https://github.com/tair-opensource/tair-tools/blob/main/LICENSE)

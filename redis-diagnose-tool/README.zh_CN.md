@@ -1,4 +1,5 @@
 # redis-diagnose-tool
+[![Python - Version](https://img.shields.io/badge/python-%3E%3D3.6-brightgreen)](https://www.python.org/doc/versions/)
 [![PyPI - Version](https://img.shields.io/pypi/v/redis-diagnose-tool)](https://pypi.org/project/redis-diagnose-tool/)
 [![MIT licensed](https://img.shields.io/badge/license-MIT-blue.svg)](./LICENSE)
 
