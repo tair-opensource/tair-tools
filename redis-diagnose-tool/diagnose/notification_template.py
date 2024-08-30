@@ -193,7 +193,6 @@ class ECSNotification(NotificationTemplate):
             return "获取 ECS 实例信息"
         return "Get ECS instance info"
 
-
     @classmethod
     def multiple_ecs_security_group_waning(cls) -> str:
         if cls.language == "zh":
@@ -206,7 +205,6 @@ class ECSNotification(NotificationTemplate):
             return "安全组未找到，安全组ID：{}，地域ID：{}"
         return "Security group not found, security group id: {}, region id: {}"
 
-
     @classmethod
     def ecs_security_group_port_check_error(cls) -> str:
         if cls.language == "zh":
@@ -216,8 +214,8 @@ class ECSNotification(NotificationTemplate):
     @classmethod
     def ecs_security_group_src_port_no_validation_warning(cls) -> str:
         if cls.language == "zh":
-            return "[诊断 ECS 安全组] 安全组规则指定了源端口但未验证，安全组规则信息：{}"
-        return "[Diagnose ECS Security Group] Source port is given but not validated, security group rule info: {}"
+            return "[诊断 ECS 安全组] 安全组规则指定了源端口但未验证，安全组规则信息：{}。"
+        return "[Diagnose ECS Security Group] Source port is given but not validated, security group rule info: {}."
 
 
 # get client detail
@@ -231,18 +229,16 @@ class ClientNotification(NotificationTemplate):
     @classmethod
     def multiple_public_ips_warning(cls) -> str:
         if cls.language == "zh":
-            return "找到多个客户端公网 IP，如果通过公网连接地址连接实例，建议在白名单中添加公网 IP 的 CIDR 地址，以应对客户端公网 IP 变化"
+            return "找到多个客户端公网 IP，如果通过公网连接地址连接实例，建议在白名单中添加公网 IP 的 CIDR 地址。"
         return ("Found multiple client public ips, if connecting to Redis instance using a public connection address, "
-                "it is recommended to add the cidr address in the whitelist to cope with the change of client public ip")
-
+                "it is recommended to add the cidr address in the whitelist.")
 
     @classmethod
     def multiple_private_ips_warning(cls) -> str:
         if cls.language == "zh":
-            return "找到多个客户端源 IP，如果通过内网连接地址连接实例，建议在白名单中添加所有客户端源 IP，以应对客户端源 IP 变化"
-        return ("Found multiple client private source ips, if connecting to Redis instance using a private connection "
-                "address, it is recommended to add all the client private source ips in the whitelist to cope with the "
-                "change of source ip for each connection")
+            return "找到多个客户端私网 IP，如果通过内网连接地址连接实例，建议在白名单中添加所有私网 IP。"
+        return ("Found multiple client private ips, if connecting to Redis instance using a private connection "
+                "address, it is recommended to add all the private ips in the whitelist.")
 
 
 class RedisInstanceNotification(NotificationTemplate):
@@ -252,12 +248,11 @@ class RedisInstanceNotification(NotificationTemplate):
             return "获取Redis实例信息"
         return "Get Redis instance info"
 
-
     @classmethod
     def classic_network_not_support_warning(cls) -> str:
         if cls.language == "zh":
-            return "该工具不支持经典网络的redis 实例，请使用 VPC 网络创建实例"
-        return "The tool does not support Redis instance of the classic network"
+            return "该工具不支持经典网络的redis 实例，请使用 VPC 网络创建实例。"
+        return "The tool does not support Redis instance of the classic network."
 
 
 class TCPConnectionNotification(NotificationTemplate):
@@ -426,7 +421,7 @@ class DNSResolutionNotification(NotificationTemplate):
                     "否拦截了 DNS 连接。")
         return ("The domain name resolution of the connection address failed. Please check whether the connection"
                 " address is correct and whether the local firewall is intercepting the DNS connection. If your client"
-                " is on ECS, please check whether the ECS security group is intercepting the DNS connection")
+                " is on ECS, please check whether the ECS security group is intercepting the DNS connection.")
 
     @classmethod
     def unexpected_error(cls, print_trace: bool = False) -> str:
@@ -613,42 +608,42 @@ class WhitelistNotification(NotificationTemplate):
                 "security group as the ecs")
 
     @classmethod
-    def private_source_ip_success_detail(cls, has_multiple_ip: bool) -> str:
+    def private_ip_success_detail(cls, part: bool) -> str:
         if cls.language == "zh":
-            if has_multiple_ip:
-                return "通过内网地址连接 Redis 实例，客户端本地源 IP（{}）在白名单中，但当前连接的源 IP 可能不在白名单中"
+            if part:
+                return "通过内网地址连接 Redis 实例，只有部分客户端私网 IP（{}）在白名单中"
             else:
-                return "通过内网地址连接 Redis 实例，客户端本地源 IP（{}）在白名单中"
-        if has_multiple_ip:
-            return ("Connect Redis instance via private connection address, client local source ip({}) is in whitelist"
-                    ", but source ip of this connection may be not in the whitelist")
+                return "通过内网地址连接 Redis 实例，所有客户端私网 IP（{}）都在白名单中"
+        if part:
+            return ("Connect Redis instance via private connection address, only some client private ips({}) are in "
+                    "the whitelist")
         else:
-            return "Connect Redis instance via private connection address, client local source ip({}) is in whitelist"
+            return "Connect Redis instance via private connection address, all client private ips({}) are in the whitelist"
 
     @classmethod
-    def private_source_ip_fail_detail(cls) -> str:
+    def private_ip_fail_detail(cls) -> str:
         if cls.language == "zh":
-            return "通过内网地址连接 Redis 实例，所有本地源 IP（{}）均不在白名单中"
-        return "Connect Redis instance via private address, all local source ips({}) are not in whitelist"
+            return "通过内网地址连接 Redis 实例，所有客户端私网 IP（{}）均不在白名单中"
+        return "Connect Redis instance via private address, all client private ips({}) are not in the whitelist"
 
     @classmethod
-    def public_ip_success_detail(cls, has_multiple_ip: bool) -> str:
+    def public_ip_success_detail(cls, part: bool) -> str:
         if cls.language == "zh":
-            if has_multiple_ip:
-                return "通过公网地址连接 Redis 实例，客户端公网 IP（{}）在白名单中，但当前连接的公网 IP 可能不在白名单中"
+            if part:
+                return "通过公网地址连接 Redis 实例，只有部分客户端公网 IP（{}）在白名单中"
             else:
-                return "通过公网地址连接 Redis 实例, 客户端公网 IP（{}）在白名单中"
-        if has_multiple_ip:
-            return ("Connect Redis instance via public connection address, client public ip ({}) is in whitelist, "
-                    "but public ip of this connection may be not in the whitelist")
+                return "通过公网地址连接 Redis 实例, 所有客户端公网 IP（{}）在白名单中"
+        if part:
+            return ("Connect Redis instance via public connection address, only some client public ips ({}) are in "
+                    "the whitelist")
         else:
-            return "Connect Redis instance via public connection address, client public ip({}) is in whitelist"
+            return "Connect Redis instance via public connection address, all client public ips({}) are in the whitelist"
 
     @classmethod
     def public_ip_fail_detail(cls) -> str:
         if cls.language == "zh":
             return "通过公网地址连接 Redis 实例，所有客户端公网 IP ({}) 均不在白名单中"
-        return "Connect Redis instance via public connection address, all client public ips ({}) are not in whitelist"
+        return "Connect Redis instance via public connection address, all client public ips ({}) are not in the whitelist"
 
     @classmethod
     def fail_issue(cls) -> str:

@@ -214,27 +214,13 @@ class TestRedisInstance:
 
     def test_diagnose_whitelist(self):
         # Successfully Connected via private connection address
-        # The client is not on ecs
-        public_client = MagicMock()
-        public_client.connection_address = "i-12345678.redis.rds.aliyuncs.com"
-        public_client.ecs = None
-        public_client.src_ips = ["192.165.17.18"]
+        private_client = MagicMock()
+        private_client.connection_address = "i-12345678.redis.rds.aliyuncs.com"
+        private_client.ecs = None
+        private_client.private_ips = ["192.168.0.10"]
         with mock.patch("diagnose.sdk.SDKFactory.get_sdk", return_value=self.mock_sdk):
             redis_instance = RedisInstance(instance_id="i-12345678", advanced_mode=True)
-            redis_instance.diagnose_whitelist(public_client)
-
-        # The client's src ip is in ip whitelist
-        private_client_with_different_ecs_sg = MagicMock()
-        private_client_with_different_ecs_sg.connection_address = "i-12345678.redis.rds.aliyuncs.com"
-        private_client_with_different_ecs_sg.ecs = MagicMock()
-        security_group = MagicMock()
-        security_group.region_id = "RegionId"
-        security_group.security_group_id = "sg-group-id1"
-        private_client_with_different_ecs_sg.ecs.security_groups = [security_group]
-        private_client_with_different_ecs_sg.ecs.private_ips = ["192.168.0.10"]
-        with mock.patch("diagnose.sdk.SDKFactory.get_sdk", return_value=self.mock_sdk):
-            redis_instance = RedisInstance(instance_id="i-12345678", advanced_mode=True)
-            redis_instance.diagnose_whitelist(private_client_with_different_ecs_sg)
+            redis_instance.diagnose_whitelist(private_client)
 
         # The client and redis instance are configured with the same ecs security group
         private_client_with_same_ecs_sg = MagicMock()
@@ -253,7 +239,7 @@ class TestRedisInstance:
         private_client = MagicMock()
         private_client.connection_address = "i-12345678.redis.rds.aliyuncs.com"
         private_client.ecs = None
-        private_client.src_ips = ["192.111.0.10"]
+        private_client.private_ips = ["192.111.0.10"]
         with mock.patch("diagnose.sdk.SDKFactory.get_sdk", return_value=self.mock_sdk):
             redis_instance = RedisInstance(instance_id="i-12345678", advanced_mode=True)
             with pytest.raises(WhiteListError):

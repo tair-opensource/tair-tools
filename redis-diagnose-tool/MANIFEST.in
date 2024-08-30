@@ -1,2 +1,3 @@
 include LICENSE
+include pypi_desp.md
 exclude __pycache__

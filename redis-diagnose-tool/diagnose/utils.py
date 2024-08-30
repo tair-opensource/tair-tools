@@ -5,11 +5,10 @@ import requests
 import socket
 import psutil
 import ipaddress
-from pyroute2 import IPRoute
 
 import unicodedata
 
-from typing import Union, Mapping, Tuple, List, Optional
+from typing import Union, Tuple, List, Optional
 
 from diagnose.exceptions import InternalError
 
@@ -90,32 +89,6 @@ def get_public_ip_address() -> Union[str, None]:
     finally:
         if "response" in locals():
             response.close()
-
-
-def get_route_info(dest_ip: str) -> List[Mapping[str, str]]:
-    if get_ip_address_type(dest_ip) != "IPv4":
-        return []
-    ipr = IPRoute()
-    routes = ipr.get_routes(dst=dest_ip, family=socket.AF_INET)
-    route_info_list = []
-    if not routes:
-        return route_info_list
-    for route in routes:
-        route_info = {}
-        for attr in route["attrs"]:
-            if attr[0] == "RTA_GATEWAY":
-                route_info["gateway"] = attr[1]
-            elif attr[0] == "RTA_OIF":
-                interface_idx = attr[1]
-                interface_info = ipr.get_links(interface_idx)[0]
-                route_info["interface"] = interface_info.get_attr("IFLA_IFNAME")
-            elif attr[0] == "RTA_PREFSRC":
-                route_info["src_ip"] = attr[1]
-        # For src_ip, also check the main attribute for the default source
-        if route.get("src"):
-            route_info["src_ip"] = route["src"]
-        route_info_list.append(route_info)
-    return route_info_list
 
 
 def read_resolve_config() -> List[str]:

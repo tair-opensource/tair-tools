@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name="redis-diagnose-tool",
-    version="0.1.0",
+    version="0.1.1",
     url="https://github.com/tair-opensource/tair-tools/tree/main/redis-diagnose-tool",
     description="redis-diagnose-tool is a tool for diagnosing Redis/Tair client connection errors.",
     long_description=open("pypi_desp.md").read().strip(),
@@ -34,7 +34,6 @@ setup(
         "psutil==6.0.0",
         "distro==1.9.0",
         "requests==2.27.1",
-        "pyroute2==0.7.10",
         "python-dateutil==2.9.0",
         "colorlog==6.8.2",
         "alibabacloud-r-kvstore20150101==4.2.0",

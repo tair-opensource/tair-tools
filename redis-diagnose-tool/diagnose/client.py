@@ -25,7 +25,6 @@ class Client:
         self._connection_port = connection_port
         self._connection_address = connection_address
         self._system_type = None
-        self._src_ips = []
         self._private_ips = []
         self._public_ips = []
         self._advanced_mode = advanced_mode
@@ -55,10 +54,6 @@ class Client:
         return self._public_ips
 
     @property
-    def src_ips(self) -> List[str]:
-        return self._src_ips
-
-    @property
     def ecs(self) -> ECS:
         return self._ecs
 
@@ -86,24 +81,16 @@ class Client:
         # Get private ip
         self._private_ips = list(map(lambda interface: interface["ip_address"], utils.get_ipv4_interfaces()))
 
-        # Get the source ip address that can be routed to the connection address
-        if self._connect_ip is not None:
-            for route_info in utils.get_route_info(self._connect_ip):
-                if route_info.get("src_ip") is not None:
-                    self._src_ips.append(route_info["src_ip"])
-
         if self.ecs is not None:
             self._private_ips = self.ecs.private_ips
             self._public_ips = self.ecs.public_ips
-            self._src_ips = self.private_ips
 
-        ConnectionDiagnosticReport.set_client_info(ClientInfo(system_detail, self.public_ips, self.private_ips,
-                                                              self._src_ips))
+        ConnectionDiagnosticReport.set_client_info(ClientInfo(system_detail, self.public_ips, self.private_ips))
 
         # check public ip and private ip
         if len(self.public_ips) > 1:
             ConnectionDiagnosticReport.add_warning(ClientNotification.multiple_public_ips_warning())
-        if len(self._src_ips) > 1:
+        if len(self._private_ips) > 1:
             ConnectionDiagnosticReport.add_warning(ClientNotification.multiple_private_ips_warning())
 
     @staticmethod

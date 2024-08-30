@@ -143,40 +143,6 @@ def test_get_public_ip_address():
         assert ip_address is None
 
 
-def test_get_route_info():
-    mock_route = {
-        "attrs": [
-            ("RTA_GATEWAY", "192.168.1.1"),
-            ("RTA_OIF", 10),
-            ("RTA_PREFSRC", "192.168.1.100")
-        ],
-        "src": "192.168.1.200"
-    }
-
-    mock_interface = MagicMock()
-    mock_interface.get_attr.return_value = "eth0"
-
-    mock_ipr_instance = MagicMock()
-    mock_ipr_instance.get_routes.return_value = [mock_route]
-    mock_ipr_instance.get_links.return_value = [mock_interface]
-
-    expected_route_info = [
-        {
-            "gateway": "192.168.1.1",
-            "interface": "eth0",
-            "src_ip": "192.168.1.200"  # the "src" field value should be used
-        }
-    ]
-
-    with patch("diagnose.utils.IPRoute") as mock_ipr:
-        mock_ipr.return_value = mock_ipr_instance
-        route_info_list = utils.get_route_info("192.168.1.1")
-        assert route_info_list == expected_route_info
-        mock_ipr_instance.get_routes.assert_called_with(dst="192.168.1.1", family=socket.AF_INET)
-        mock_ipr_instance.get_links.assert_called_with(10)
-        mock_interface.get_attr.assert_called_with("IFLA_IFNAME")
-
-
 def test_read_resolv_conf():
     # Test read_resolve_config with a single nameserver
     with patch("builtins.open", new_callable=mock_open, read_data="nameserver 8.8.8.8\n"):

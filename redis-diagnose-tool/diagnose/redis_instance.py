@@ -134,6 +134,7 @@ class RedisInstance:
         private_connection_addresses = [connection_info.get("address") for connection_info in
                                         self.private_connection_info]
         if (client.connection_address in private_connection_addresses
+                and client.ecs is not None
                 and self.vpc_id is not None
                 and not self.can_connect_via_intranet_address(client)
         ):
@@ -200,10 +201,6 @@ class RedisInstance:
         # Connect via private address, check ip whitelist and redis instance security group
         private_connection_addresses = [connection_info.get("address") for connection_info in
                                         self.private_connection_info]
-        candidate_src_ips = client.src_ips
-        if client.ecs is not None:
-            # If the client runs in a docker container on ecs, the actual src ip is the ecs private ip
-            candidate_src_ips = client.ecs.private_ips
         if client.connection_address in private_connection_addresses:
             for redis_security_group in self.security_group:
                 if client.ecs is None:
@@ -217,33 +214,34 @@ class RedisInstance:
                         whitelist_check.set_detail(WhitelistNotification.same_security_group_success_detail())
                         return
             private_white_ips = []
-            for src_ip in candidate_src_ips:
-                for ip in self.ip_whitelist:
-                    if utils.is_ip_in_cidr(src_ip, ip):
-                        private_white_ips.append(src_ip)
+            for private_ip in client.private_ips:
+                for white_ip in self.ip_whitelist:
+                    if utils.is_ip_in_cidr(private_ip, white_ip):
+                        private_white_ips.append(private_ip)
+                        break
 
             if len(private_white_ips) > 0:
-                if len(candidate_src_ips) > 1:
+                if len(client.private_ips) != len(private_white_ips):
                     logger.warning(ProcessReport.get_arrow_line(yes=True, message="unknown"))
                     logger.warning(ProcessReport.step_indentation + ProcessReport.arrow_head)
                     whitelist_check.unknown()
-                    whitelist_check.set_detail(WhitelistNotification.private_source_ip_success_detail(True).format(
+                    whitelist_check.set_detail(WhitelistNotification.private_ip_success_detail(True).format(
                                                 ",".join(private_white_ips)))
                 else:
                     logger.info(ProcessReport.get_arrow_line(yes=True))
                     logger.info(ProcessReport.step_indentation + ProcessReport.arrow_head)
                     whitelist_check.success()
-                    whitelist_check.set_detail(WhitelistNotification.private_source_ip_success_detail(False).
+                    whitelist_check.set_detail(WhitelistNotification.private_ip_success_detail(False).
                                                format(",".join(private_white_ips)))
                 return
             else:
                 logger.error(ProcessReport.get_arrow_line(yes=False))
                 logger.error(ProcessReport.step_indentation + ProcessReport.arrow_head)
                 whitelist_check.fail()
-                whitelist_check.set_detail(WhitelistNotification.private_source_ip_fail_detail().format(
-                                            ",".join(candidate_src_ips)))
+                whitelist_check.set_detail(WhitelistNotification.private_ip_fail_detail().format(
+                                            ",".join(client.private_ips)))
                 ConnectionDiagnosticReport.add_issue(WhitelistNotification.fail_issue())
-                raise WhiteListError(",".join(client.src_ips))
+                raise WhiteListError(",".join(client.private_ips))
 
         # Connect via public address, check ip whitelist
         public_white_ips = []
@@ -251,8 +249,9 @@ class RedisInstance:
             for white_ip in self.ip_whitelist:
                 if utils.is_ip_in_cidr(public_ip, white_ip):
                     public_white_ips.append(public_ip)
+                    break
         if len(public_white_ips) > 0:
-            if len(client.public_ips) > 1:
+            if len(client.public_ips) != len(public_white_ips):
                 logger.warning(ProcessReport.get_arrow_line(yes=True, message="unknown"))
                 logger.warning(ProcessReport.step_indentation + ProcessReport.arrow_head)
                 whitelist_check.unknown()
