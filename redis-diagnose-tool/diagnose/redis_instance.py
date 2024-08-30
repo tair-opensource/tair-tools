@@ -476,7 +476,8 @@ class RedisInstance:
                 end = time.time()
             except redis.RedisError:
                 continue
-
+            if response is None:
+                continue
             # Get access path identifier
             if not enable_proxy:  # No proxy run id
                 key = "db"
@@ -497,7 +498,7 @@ class RedisInstance:
                 stat_result = stat_results[key]
 
             # Get statistical results
-            rt_us = (end - start) * 1e6
+            rt_us = max((end - start) * 1e6, 1)
             # rt bucket: <256us <512us <1ms <2ms <4ms <8ms <16ms <32ms <64ms <128ms <256ms <max
             if rt_us < 1000:
                 index = max(math.ceil(math.log(rt_us, 2)) - 8, 0)
