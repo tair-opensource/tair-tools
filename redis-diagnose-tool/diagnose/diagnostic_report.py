@@ -199,18 +199,15 @@ class ConnectionDiagnosticReport:
 
 
 class ClientInfo:
-    def __init__(self, system: str, public_ips: List[str], private_ips: List[str], source_ips: List[str]):
+    def __init__(self, system: str, public_ips: List[str], private_ips: List[str]):
         self._system = system
         self._public_ips = public_ips
         self._private_ips = private_ips
-        self._source_ips = source_ips
 
     def __repr__(self) -> str:
         if NotificationTemplate.language == "zh":
-            return (f"\t系统: {self._system}\n\t公网 IP: {self._public_ips}\n\t本地私有 IP: {self._private_ips}\n"
-                    f"\t本地源 IP: {self._source_ips}")
-        return (f"\tSystem: {self._system}\n\tPublic IP: {self._public_ips}\n\tPrivate IP: {self._private_ips}\n"
-                f"\tSource IP: {self._source_ips}")
+            return f"\t系统: {self._system}\n\t公网 IP: {self._public_ips}\n\t私网 IP: {self._private_ips}"
+        return f"\tSystem: {self._system}\n\tPublic IP: {self._public_ips}\n\tPrivate IP: {self._private_ips}"
 
 
 class Check:

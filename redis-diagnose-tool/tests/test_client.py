@@ -20,7 +20,6 @@ class TestClient:
             with mock.patch("diagnose.utils.resolve_host", return_value="1.1.1.1"):
                 with mock.patch("diagnose.utils.get_public_ip_address", return_value="114.111.0.10"):
                     with mock.patch("diagnose.utils.get_ipv4_interfaces", return_value=[{"ip_address": "192.168.10.1"}]):
-                        with mock.patch("diagnose.utils.get_route_info", return_value=[{"src_ip":"192.168.10.1"}]):
                             self.client = Client("i-12345678pd.redis.rds.aliyuncs.com",
                                                  6379,
                                                  ecs_instance_id=None,
@@ -32,7 +31,6 @@ class TestClient:
             with mock.patch("diagnose.utils.resolve_host", return_value=None):
                 with mock.patch("diagnose.utils.get_public_ip_address", return_value="114.111.0.10"):
                     with mock.patch("diagnose.utils.get_ipv4_interfaces", return_value=[{"ip_address": "192.168.10.1"}]):
-                        with mock.patch("diagnose.utils.get_route_info", return_value=[{"src_ip":"192.168.10.1"}]):
                             self.client = Client("i-12345678pd.redis.rds.aliyuncs.com",
                                                  6379,
                                                  ecs_instance_id=None,
@@ -40,7 +38,6 @@ class TestClient:
 
     def test_get_client_detail(self, init_success):
         assert self.client._system_type == "Linux"
-        assert self.client.src_ips == ["192.168.10.1"]
         assert self.client.public_ips == ["114.111.0.10"]
         assert self.client.private_ips == ["192.168.10.1"]
 
