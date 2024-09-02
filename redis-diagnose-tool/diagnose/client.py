@@ -110,6 +110,9 @@ class Client:
             return False, "No Authentication"
         if "invalid username-password pair" in response:
             return False, "Invalid Username-password Pair"
+        if "illegal address" in response:
+            ip = response.split(":")[1]
+            return False, f"Whitelist Error:{ip}"
         return (response in ["+OK\r\n", "+PONG\r\n"]), response[:-2] if response.endswith("\r\n") else response
 
     def diagnose_ecs_security_group(

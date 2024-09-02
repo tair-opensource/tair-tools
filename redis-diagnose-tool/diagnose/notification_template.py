@@ -772,6 +772,18 @@ class AuthenticationNotification(NotificationTemplate):
         return "Authentication failed, invalid username-password pair"
 
     @classmethod
+    def whitelist_error_detail(cls):
+        if cls.language == "zh":
+            return "密码验证失败：IP {} 不在白名单中"
+        return "Authentication failed, IP {} is not in the whitelist"
+
+    @classmethod
+    def whitelist_issue(cls):
+        if cls.language == "zh":
+            return "未正确配置白名单"
+        return "Whitelist is not configured correctly"
+
+    @classmethod
     def socket_error_detail(cls, print_trace: bool = False) -> str:
         if cls.language == "zh":
             description = "密码验证失败, Socket错误: {}"

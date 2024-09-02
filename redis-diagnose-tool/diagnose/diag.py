@@ -195,6 +195,11 @@ def diagnose_connection(args):
                 logger.error(ProcessReport.step_indentation + ProcessReport.arrow_head)
                 ConnectionDiagnosticReport.add_issue(AuthenticationNotification.invalid_username_password_pair_issue())
                 password_auth_check.set_detail(AuthenticationNotification.invalid_username_password_pair_detail())
+            elif "Whitelist Error" in error:
+                logger.error(ProcessReport.get_arrow_line(yes=False, message="Whitelist Error"))
+                logger.error(ProcessReport.step_indentation + ProcessReport.arrow_head)
+                ConnectionDiagnosticReport.add_issue(AuthenticationNotification.whitelist_issue())
+                password_auth_check.set_detail(AuthenticationNotification.whitelist_error_detail().format(error.split(":")[1]))
             else:
                 logger.error(ProcessReport.get_arrow_line(yes=False))
                 logger.error(ProcessReport.step_indentation + ProcessReport.arrow_head)
