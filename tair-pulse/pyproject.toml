@@ -1,0 +1,43 @@
+[project]
+name = "tair-pulse"
+version = "1.3.2"
+description = "TairPulse is a tool to visualize the latency and availability of Tair/Redis instances."
+authors = [
+    { name = "Tair", email = "tair-opensource@alibabacloud.com" },
+    { name = "suxb201", email = "suxb201@gmail.com" },
+]
+dependencies = [
+    "plotly",
+    "redis",
+    "plotly-resampler",
+    "rich",
+]
+readme = "README.md"
+requires-python = ">= 3.6"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Topic :: Database",
+]
+
+[project.scripts]
+"tair-pulse" = "tair_pulse.main:main"
+
+[project.urls]
+"Homepage" = "https://github.com/tair-opensource"
+"Bug Tracker" = "https://github.com/tair-opensource"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.rye]
+managed = true
+dev-dependencies = []
+
+[tool.hatch.metadata]
+allow-direct-references = true
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/tair_pulse"]
