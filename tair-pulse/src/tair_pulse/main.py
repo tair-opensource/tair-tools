@@ -150,7 +150,7 @@ def run_write_cmd():
         try:
             ret = r.incr(key)
             data_dict[key] += 1
-            assert ret == data_dict[key], "key:{0} should be [{1}], but got [{2}]".format(key, data_dict[key], ret)
+            assert ret == data_dict[key], "data error: key:{} diff:{}".format(key, ret - data_dict[key])
         except Exception as e:
             error = str(e)
         latency = round((time.time() - start_time) * 1000, 2)
@@ -275,10 +275,21 @@ def main():
     from plotly_resampler import FigureResampler
     from plotly.subplots import make_subplots
 
+    # Calculate dynamic spacing and height based on number of errors
+    error_count = len(error_dict)
+    # Base spacing: 0.15 when no errors, each error item adds about 25px spacing
+    # Additional spacing: error_count * 25px / 800px
+    vertical_spacing = 0.15 + (error_count * 25 / 800)
+    vertical_spacing = min(vertical_spacing, 0.5)  # Cap at 0.5 to avoid too much space
+    
+    # Adjust total height based on error count: base 800px + error_count * 30px
+    total_height = 800 + error_count * 30
+    total_height = min(total_height, 1500)  # Cap at 1500px
+
     # Create figure with 2 subplots stacked vertically
     fig = make_subplots(rows=2, cols=1,
                         subplot_titles=("Latency Over Time", "Latency Histogram"),
-                        vertical_spacing=0.2,
+                        vertical_spacing=vertical_spacing,
                         specs=[
                             [{"type": "scatter"}],
                             [{"type": "scatter"}]  # Changed from histogram to scatter
@@ -336,15 +347,15 @@ def main():
     # Update layout
     resampler.update_layout(
         title="tair-pulse ({0}:{1})".format(g_args.host, g_args.port),
-        height=800,  # Increased height to accommodate both plots
+        height=total_height,  # Dynamic height based on error count
         legend=dict(
             orientation="v",
-            yanchor="top",
-            y=0.48,
+            yanchor="middle",
+            y=0.5,
             xanchor="left",
             x=0.01,
-            bgcolor="rgba(255, 255, 255, 0.8)",
-            bordercolor="rgba(0, 0, 0, 0.2)",
+            bgcolor="rgba(255, 255, 255, 0.9)",
+            bordercolor="rgba(0, 0, 0, 0.3)",
             borderwidth=1
         ),
         bargap=0,  # Remove gaps between bars in the first subplot
