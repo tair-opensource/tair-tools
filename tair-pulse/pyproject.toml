@@ -7,10 +7,10 @@ authors = [
     { name = "suxb201", email = "suxb201@gmail.com" },
 ]
 dependencies = [
-    "plotly",
-    "redis",
-    "plotly-resampler",
-    "rich",
+    "plotly>=5.0.0,<6.0.0",
+    "redis>=5.0.0,<7.0.0",
+    "plotly-resampler>=0.10.0,<1.0.0",
+    "rich>=13.0.0,<14.0.0",
 ]
 readme = "README.md"
 requires-python = ">= 3.6"

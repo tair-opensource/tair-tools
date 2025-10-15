@@ -201,15 +201,19 @@ def create_client(timeout=TIMEOUT_SECONDS) -> TYPE_CLIENT:
 
     if g_args.cluster:
         r = redis.RedisCluster(host=g_args.host, port=g_args.port, password=g_args.password,
-                               cluster_error_retry_attempts=1,
+                               cluster_error_retry_attempts=0,
                                socket_timeout=timeout,
                                socket_connect_timeout=timeout,
+                               retry_on_timeout=False,
+                               retry=None,
                                single_connection_client=True)
 
     else:
         r = redis.Redis(host=g_args.host, port=g_args.port, password=g_args.password,
                         socket_timeout=timeout,
                         socket_connect_timeout=timeout,
+                        retry_on_timeout=False,
+                        retry=None,
                         single_connection_client=True)
     return r
 
@@ -333,14 +337,22 @@ def main():
     resampler.update_layout(
         title="tair-pulse ({0}:{1})".format(g_args.host, g_args.port),
         height=800,  # Increased height to accommodate both plots
-        legend=dict(yanchor="bottom", y=0.48, xanchor="left", x=0),
+        legend=dict(
+            orientation="v",
+            yanchor="top",
+            y=0.48,
+            xanchor="left",
+            x=0.01,
+            bgcolor="rgba(255, 255, 255, 0.8)",
+            bordercolor="rgba(0, 0, 0, 0.2)",
+            borderwidth=1
+        ),
         bargap=0,  # Remove gaps between bars in the first subplot
         bargroupgap=0  # Remove gaps between bar groups
     )
 
     resampler.write_html(filename)
-    resampler.show_dash()
-
+    resampler.show_dash(mode="external")
 
 if __name__ == "__main__":
     main()
