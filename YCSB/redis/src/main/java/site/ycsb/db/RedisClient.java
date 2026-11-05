@@ -57,8 +57,11 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 /**
  * YCSB binding for <a href="http://redis.io/">Redis</a>.
  *
- * 多线程共享一个 JedisPool（单机）或 JedisCluster（集群，自带连接池），
+ * 多线程共享 JedisPool（单机）或 JedisCluster（集群，自带连接池），
  * 每次操作通过 try-with-resources 从池中借用连接，避免每个线程独占长连接。
+ *
+ * 为降低 commons-pool2 借还连接时的全局锁竞争，连接池按 {@code redis.pool.shard_size} 分段：
+ * 每段一个 JedisPool / JedisCluster，线程在 init 时轮询分到各段，每段内的线程共享该段连接。
  *
  * See {@code redis/README.md} for details.
  */
@@ -79,6 +82,9 @@ public class RedisClient extends DB {
   public static final String POOL_MIN_IDLE_PROPERTY = "redis.pool.min_idle";
   public static final String POOL_MAX_WAIT_MILLIS_PROPERTY = "redis.pool.max_wait_millis";
   public static final String POOL_TEST_ON_BORROW_PROPERTY = "redis.pool.test_on_borrow";
+  /** Target threads per pool shard; a positive max_total also caps the number of shards. */
+  public static final String POOL_SHARD_SIZE_PROPERTY = "redis.pool.shard_size";
+  private static final int DEFAULT_POOL_SHARD_SIZE = 32;
 
   public static final String FIELD_COUNT = "fieldcount";
   public static final String FIELD_LENGTH = "fieldlength";
@@ -110,12 +116,20 @@ public class RedisClient extends DB {
     }
   };
 
-  // ===== 共享的连接池（所有 YCSB 工作线程共用） =====
+  // ===== 分段共享的连接池（每段由若干 YCSB 工作线程共用） =====
   private static final Object POOL_LOCK = new Object();
-  private static volatile JedisPool jedisPool;
-  private static volatile JedisCluster jedisCluster;
+  private static volatile JedisPool[] jedisPools;
+  private static volatile JedisCluster[] jedisClusters;
+  /** Round-robin counter used to assign each client thread to a shard. */
+  private static final AtomicInteger NEXT_SHARD = new AtomicInteger(0);
   /** Reference count, ensures the pool is closed only when the last cleanup finishes. */
   private static final AtomicInteger REF_COUNT = new AtomicInteger(0);
+
+  // 本线程所属分段的连接池 / 集群客户端
+  private JedisPool jedisPool;
+  private JedisCluster jedisCluster;
+  /** Guarded by POOL_LOCK, together with shared pool publication and reference counting. */
+  private boolean initialized;
 
   private boolean clusterEnabled = false;
   private String commandGroup = STRING_COMMAND;
@@ -144,7 +158,15 @@ public class RedisClient extends DB {
 
   @Override
   public void init() throws DBException {
-    Properties props = getProperties();
+    synchronized (POOL_LOCK) {
+      if (initialized) {
+        return;
+      }
+      init(getProperties());
+    }
+  }
+
+  private void init(Properties props) throws DBException {
     int port;
 
     String debugModeString = props.getProperty(DEBUG_PROPERTY);
@@ -196,38 +218,88 @@ public class RedisClient extends DB {
     }
     commandType = convertToCommandType(commandGroup);
 
-    // 仅由第一个进入的线程初始化共享连接池/集群客户端，其余线程直接复用
-    if (jedisPool == null && jedisCluster == null) {
-      synchronized (POOL_LOCK) {
-        if (jedisPool == null && jedisCluster == null) {
-          String password = props.getProperty(PASSWORD_PROPERTY);
-          if (clusterEnabled) {
-            Set<HostAndPort> jedisClusterNodes = new HashSet<>();
-            jedisClusterNodes.add(new HostAndPort(host, port));
-            JedisPoolConfig poolConfig = buildPoolConfig(props);
-            int maxAttempts = 5;
-            if (password != null) {
-              jedisCluster = new JedisCluster(jedisClusterNodes, timeout, timeout,
-                  maxAttempts, password, poolConfig);
-            } else {
-              jedisCluster = new JedisCluster(jedisClusterNodes, timeout, maxAttempts, poolConfig);
-            }
-          } else {
-            JedisPoolConfig poolConfig = buildPoolConfig(props);
-            jedisPool = new JedisPool(poolConfig, host, port, timeout, password);
-          }
+    // POOL_LOCK covers creation, assignment and reference counting, but never Redis operations.
+    if (jedisPools == null && jedisClusters == null) {
+      String password = props.getProperty(PASSWORD_PROPERTY);
+      int threads = Integer.parseInt(props.getProperty("threadcount", "1"));
+      if (threads <= 0) {
+        throw new DBException("threadcount must be positive");
+      }
+      int shardSize = Integer.parseInt(props.getProperty(POOL_SHARD_SIZE_PROPERTY,
+          String.valueOf(DEFAULT_POOL_SHARD_SIZE)));
+      int shards = shardSize > 0 ? ceilDiv(threads, shardSize) : 1;
+      String maxTotalString = props.getProperty(POOL_MAX_TOTAL_PROPERTY);
+      if (maxTotalString != null) {
+        int maxTotal = Integer.parseInt(maxTotalString);
+        if (maxTotal == 0) {
+          throw new DBException(POOL_MAX_TOTAL_PROPERTY + " must be positive or negative (unlimited)");
+        }
+        if (maxTotal > 0) {
+          // Every assigned shard must have at least one usable connection.
+          shards = Math.min(shards, maxTotal);
         }
       }
+      JedisPool[] pools = clusterEnabled ? null : new JedisPool[shards];
+      JedisCluster[] clusters = clusterEnabled ? new JedisCluster[shards] : null;
+      try {
+        for (int i = 0; i < shards; i++) {
+          JedisPoolConfig poolConfig = buildPoolConfig(props, threads, shards, i);
+          if (clusterEnabled) {
+            clusters[i] = newJedisCluster(host, port, password, poolConfig);
+          } else {
+            pools[i] = new JedisPool(poolConfig, host, port, timeout, password);
+          }
+        }
+      } catch (RuntimeException | Error failure) {
+        Exception closeFailure = closePools(pools, clusters);
+        if (closeFailure != null) {
+          failure.addSuppressed(closeFailure);
+        }
+        throw failure;
+      }
+      // Publish only after every shard has been constructed successfully.
+      jedisPools = pools;
+      jedisClusters = clusters;
+      NEXT_SHARD.set(0);
+    } else if (clusterEnabled != (jedisClusters != null)) {
+      throw new DBException("All clients sharing pools must use the same redis.cluster setting");
+    }
+
+    int shard = NEXT_SHARD.getAndIncrement();
+    if (clusterEnabled) {
+      jedisCluster = jedisClusters[Math.floorMod(shard, jedisClusters.length)];
+    } else {
+      jedisPool = jedisPools[Math.floorMod(shard, jedisPools.length)];
     }
 
     REF_COUNT.incrementAndGet();
+    initialized = true;
 
     if (debugMode) {
       System.out.println(String.format("Properties: %s", props.toString()));
     }
   }
 
-  private static JedisPoolConfig buildPoolConfig(Properties props) {
+  private JedisCluster newJedisCluster(String host, int port, String password, JedisPoolConfig poolConfig) {
+    Set<HostAndPort> jedisClusterNodes = new HashSet<>();
+    jedisClusterNodes.add(new HostAndPort(host, port));
+    int maxAttempts = 5;
+    if (password != null) {
+      return new JedisCluster(jedisClusterNodes, timeout, timeout, maxAttempts, password, poolConfig);
+    }
+    return new JedisCluster(jedisClusterNodes, timeout, maxAttempts, poolConfig);
+  }
+
+  private static int ceilDiv(int a, int b) {
+    return a / b + (a % b == 0 ? 0 : 1);
+  }
+
+  /** Split a finite total exactly; preserve negative Commons Pool sentinel values. */
+  private static int shardLimit(int total, int shards, int index) {
+    return total < 0 ? total : total / shards + (index < total % shards ? 1 : 0);
+  }
+
+  private static JedisPoolConfig buildPoolConfig(Properties props, int threads, int shards, int index) {
     JedisPoolConfig config = new JedisPoolConfig();
     String maxTotal = props.getProperty(POOL_MAX_TOTAL_PROPERTY);
     String maxIdle = props.getProperty(POOL_MAX_IDLE_PROPERTY);
@@ -235,13 +307,14 @@ public class RedisClient extends DB {
     String maxWait = props.getProperty(POOL_MAX_WAIT_MILLIS_PROPERTY);
     String testOnBorrow = props.getProperty(POOL_TEST_ON_BORROW_PROPERTY);
 
-    // 从 YCSB 全局属性获取线程数，以此动态计算池默认值
-    int threads = Integer.parseInt(props.getProperty("threadcount", "1"));
+    // 每段分到的线程数，以此动态计算池默认值
+    int shardThreads = ceilDiv(threads, shards);
 
-    // 默认值：max_total = threads + 16, max_idle = min_idle = threads
-    config.setMaxTotal(maxTotal != null ? Integer.parseInt(maxTotal) : threads + 16);
-    config.setMaxIdle(maxIdle != null ? Integer.parseInt(maxIdle) : threads);
-    config.setMinIdle(minIdle != null ? Integer.parseInt(minIdle) : threads);
+    // Explicit limits are totals across shards: distribute the remainder one at a time.
+    // 默认值（每段）：max_total = shardThreads + 16, max_idle = min_idle = shardThreads
+    config.setMaxTotal(maxTotal != null ? shardLimit(Integer.parseInt(maxTotal), shards, index) : shardThreads + 16);
+    config.setMaxIdle(maxIdle != null ? shardLimit(Integer.parseInt(maxIdle), shards, index) : shardThreads);
+    config.setMinIdle(minIdle != null ? shardLimit(Integer.parseInt(minIdle), shards, index) : shardThreads);
     config.setMaxWaitMillis(maxWait != null ? Long.parseLong(maxWait) : 5000L);
     // 压测场景默认关闭 testOnBorrow，避免每次借连接都发 PING 多一次 RTT
     config.setTestOnBorrow(testOnBorrow != null && Boolean.parseBoolean(testOnBorrow));
@@ -251,23 +324,62 @@ public class RedisClient extends DB {
 
   @Override
   public void cleanup() throws DBException {
-    // 最后一个线程退出时才真正关闭共享池
-    if (REF_COUNT.decrementAndGet() == 0) {
-      synchronized (POOL_LOCK) {
-        try {
-          if (jedisPool != null) {
-            jedisPool.close();
-            jedisPool = null;
+    synchronized (POOL_LOCK) {
+      if (!initialized) {
+        return;
+      }
+      initialized = false;
+      jedisPool = null;
+      jedisCluster = null;
+      if (REF_COUNT.decrementAndGet() != 0) {
+        return;
+      }
+      JedisPool[] pools = jedisPools;
+      JedisCluster[] clusters = jedisClusters;
+      jedisPools = null;
+      jedisClusters = null;
+      NEXT_SHARD.set(0);
+      Exception failure = closePools(pools, clusters);
+      if (failure != null) {
+        throw new DBException("Closing connection failed.", failure);
+      }
+    }
+  }
+
+  /** Close every constructed shard, including when construction stopped part way through. */
+  private static Exception closePools(JedisPool[] pools, JedisCluster[] clusters) {
+    Exception failure = null;
+    if (pools != null) {
+      for (JedisPool pool : pools) {
+        if (pool != null) {
+          try {
+            pool.close();
+          } catch (Exception e) {
+            failure = recordCloseFailure(failure, e);
           }
-          if (jedisCluster != null) {
-            jedisCluster.close();
-            jedisCluster = null;
-          }
-        } catch (IOException e) {
-          throw new DBException("Closing connection failed.", e);
         }
       }
     }
+    if (clusters != null) {
+      for (JedisCluster cluster : clusters) {
+        if (cluster != null) {
+          try {
+            cluster.close();
+          } catch (Exception e) {
+            failure = recordCloseFailure(failure, e);
+          }
+        }
+      }
+    }
+    return failure;
+  }
+
+  private static Exception recordCloseFailure(Exception first, Exception next) {
+    if (first == null) {
+      return next;
+    }
+    first.addSuppressed(next);
+    return first;
   }
 
   /**
@@ -279,7 +391,7 @@ public class RedisClient extends DB {
   }
 
   /**
-   * Borrow a connection from the shared pool to execute the operation and return it
+   * Borrow a connection from this thread's pool shard to execute the operation and return it
    * automatically afterwards (in cluster mode JedisCluster has its own internal pool).
    */
   private <T> T execute(JedisOp<T> op) {
